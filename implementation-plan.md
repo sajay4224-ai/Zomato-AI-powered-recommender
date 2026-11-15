@@ -18,7 +18,7 @@ data store, or LLM provider is assumed in advance.
 | 3 | Implement preference validation and filtering | Return deterministic candidates for valid user preferences |
 | 4 | Build the application interface | Collect preferences and present loading, empty, error, and result states |
 | 5 | Integrate LLM ranking and explanations | Rank bounded candidates and validate grounded explanations |
-| 6 | End-to-end verification and release readiness | Validate complete workflows, reliability, and deployment configuration |
+| 6 | End-to-end verification and release readiness | Validate complete workflows, Ireliability, and deployment configuration |
 
 Phases 2 and 3 depend on Phase 1. Phase 4 can begin after the request and
 response contracts are agreed in Phase 0, and can proceed alongside Phases 2

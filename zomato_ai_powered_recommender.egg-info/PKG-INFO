@@ -1,0 +1,43 @@
+Metadata-Version: 2.4
+Name: zomato-ai-powered-recommender
+Version: 0.1.0
+Summary: AI-powered restaurant recommendation service built around a filtered Zomato dataset and Gemini ranking.
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: fastapi>=0.111.0
+Requires-Dist: uvicorn[standard]>=0.30.0
+Requires-Dist: pydantic-settings>=2.3.0
+Requires-Dist: python-dotenv>=1.0.1
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0.0; extra == "dev"
+Requires-Dist: httpx>=0.27.0; extra == "dev"
+Requires-Dist: ruff>=0.5.0; extra == "dev"
+
+# Zomato AI-Powered Recommender
+AI-powered restaurant recommendation service that suggests restaurants based on user preferences.
+
+## Phase 0 status
+The project has resolved the implementation decisions required before application scaffolding begins.
+
+- Dataset profile and quality assessment: [docs/phase-0-decisions.md](./docs/phase-0-decisions.md)
+- Runtime configuration template: [.env.example](./.env.example)
+
+This phase defines the dataset contract, budget mapping, filtering rules, LLM provider approach, and explicit fallback behavior used for subsequent implementation work.
+
+## Phase 1 quick start
+
+1. Create a virtual environment:
+   `python -m venv .venv`
+2. Activate it:
+   `source .venv/bin/activate`
+3. Install dependencies:
+   `pip install -e '.[dev]'`
+4. Copy the environment template and fill in real values:
+   `cp .env.example .env`
+5. Run the app:
+   `uvicorn app.main:app --reload`
+6. Run tests:
+   `pytest`
+
+The app exposes a health endpoint at `/health` and a readiness endpoint at `/ready`.
+The `/api/recommend` route is part of the typed boundary contract and currently returns a clear service error until the dataset filtering and Gemini ranking pipeline is implemented in later phases.

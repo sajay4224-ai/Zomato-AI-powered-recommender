@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Discover restaurant recommendations picked for your taste and budget."
+    />
+    <title>Discover your next favorite | Zomato AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css?v=5" />
+    <script src="/static/app.js?v=2" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Zomato AI home">
+        <span class="brand-mark" aria-hidden="true">z.</span>
+        <span>zomato<span class="brand-light"> ai</span></span>
+      </a>
+      <span class="topbar-note"><span class="live-dot"></span> Your personal food scout</span>
+    </header>
+
+    <main class="page">
+      <section class="intro">
+        <p class="eyebrow">A little inspiration for your next meal</p>
+        <h1>Good food,<br /><span>found for you.</span></h1>
+        <p class="intro-copy">
+          Tell us what you're craving. We'll find the spots that fit your mood, your taste, and your budget.
+        </p>
+      </section>
+
+      <div class="workspace">
+        <aside class="search-panel">
+          <div class="panel-heading">
+            <span class="heading-icon" aria-hidden="true">🍽️</span>
+            <div>
+              <h2>Your kind of place</h2>
+              <p>Make it as specific as you like.</p>
+            </div>
+          </div>
+
+          <form id="recommendation-form">
+            <label class="field">
+              <span class="field-label">Location / Neighborhood <span class="required">*</span></span>
+              <span class="input-wrap">
+                <span class="input-icon" aria-hidden="true">📍</span>
+                <select
+                  id="location"
+                  name="location"
+                  aria-describedby="location-hint"
+                  required
+                  disabled
+                >
+                  <option value="">Loading locations...</option>
+                </select>
+              </span>
+              <span class="field-hint" id="location-hint">Choose a city or neighborhood from the restaurant catalog.</span>
+            </label>
+
+            <label class="field">
+              <span class="field-label">Cuisine <span class="optional">(optional)</span></span>
+              <span class="input-wrap">
+                <span class="input-icon" aria-hidden="true">🍜</span>
+                <select
+                  id="cuisine"
+                  name="cuisine"
+                  aria-describedby="cuisine-hint"
+                  disabled
+                >
+                  <option value="">Loading cuisines...</option>
+                </select>
+                <span class="select-chevron" aria-hidden="true">⌄</span>
+              </span>
+              <span class="field-hint" id="cuisine-hint">Leave it on Any cuisine to explore everything.</span>
+            </label>
+
+            <label class="field">
+              <span class="field-label">Budget</span>
+              <span class="input-wrap">
+                <span class="input-icon" aria-hidden="true">💸</span>
+                <select id="budget" name="budget">
+                  <option value="low">Low · ₹500 or less</option>
+                  <option value="medium" selected>Medium · &gt;₹500–₹1,000</option>
+                  <option value="high">High · over ₹1,000</option>
+                </select>
+                <span class="select-chevron" aria-hidden="true">⌄</span>
+              </span>
+              <span class="field-hint">Estimated cost for two, based on the dataset.</span>
+            </label>
+
+            <label class="field">
+              <span class="field-label">Minimum rating</span>
+              <span class="input-wrap">
+                <span class="input-icon rating-icon" aria-hidden="true">⭐</span>
+                <select id="min_rating" name="min_rating">
+                  <option value="">Any rating</option>
+                  <option value="3.0">3.0 and up</option>
+                  <option value="3.5">3.5 and up</option>
+                  <option value="4.0">4.0 and up</option>
+                  <option value="4.5">4.5 and up</option>
+                </select>
+                <span class="select-chevron" aria-hidden="true">⌄</span>
+              </span>
+            </label>
+
+            <label class="field">
+              <span class="field-label">Family dining preference</span>
+              <span class="input-wrap">
+                <span class="input-icon" aria-hidden="true">👪</span>
+                <select id="family_preference" name="family_preference">
+                  <option value="">No family preference</option>
+                  <option value="Family friendly - no alcohol">Family friendly - no alcohol</option>
+                  <option value="Family friendly - with Alcohol">Family friendly - with Alcohol</option>
+                </select>
+                <span class="select-chevron" aria-hidden="true">⌄</span>
+              </span>
+              <span class="field-hint">Used as a soft preference; alcohol availability isn't verified in the catalog.</span>
+            </label>
+
+            <label class="field">
+              <span class="field-label">What's the vibe? <span aria-hidden="true">✨</span></span>
+              <textarea
+                id="additional_preferences"
+                name="additional_preferences"
+                rows="3"
+                maxlength="500"
+                placeholder="A cozy date-night spot, somewhere lively for friends, quick lunch..."
+              ></textarea>
+              <span class="field-hint">Share a craving or occasion to help shape your picks.</span>
+            </label>
+
+            <button class="submit-button" id="submit-button" type="submit" disabled>
+              <span>Find my restaurants</span>
+              <span class="button-arrow" aria-hidden="true">↗</span>
+            </button>
+            <p class="form-footnote">Restaurant details and prices come from the available dataset.</p>
+          </form>
+        </aside>
+
+        <section class="results-panel" aria-labelledby="results-title">
+          <div class="results-heading">
+            <div>
+              <p class="eyebrow">Picked around your preferences</p>
+              <h2 id="results-title">Your next favorite</h2>
+            </div>
+            <span class="results-spark" aria-hidden="true">✳</span>
+          </div>
+
+          <div id="status-box" class="status-box" role="status" aria-live="polite" hidden></div>
+          <div id="results" class="results-list" aria-live="polite" aria-busy="false">
+            <div class="welcome-state">
+              <div class="welcome-illustration" aria-hidden="true">
+                <span class="plate plate-back"></span>
+                <span class="plate plate-front"><span>✳</span></span>
+                <span class="sparkle sparkle-one">✦</span>
+                <span class="sparkle sparkle-two">✧</span>
+              </div>
+              <h3>Something delicious is out there.</h3>
+              <p>Add your location and preferences to see restaurants chosen just for you.</p>
+            </div>
+          </div>
+          <p class="results-footnote">Recommendations are based on the restaurant catalog and your preferences.</p>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <span>Made for people who love a good meal.</span>
+      <span>Good taste, better finds.</span>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,15 @@
+README.md
+pyproject.toml
+app/__init__.py
+app/config.py
+app/main.py
+app/models.py
+app/services/__init__.py
+app/services/catalog.py
+app/services/orchestration.py
+tests/test_app.py
+zomato_ai_powered_recommender.egg-info/PKG-INFO
+zomato_ai_powered_recommender.egg-info/SOURCES.txt
+zomato_ai_powered_recommender.egg-info/dependency_links.txt
+zomato_ai_powered_recommender.egg-info/requires.txt
+zomato_ai_powered_recommender.egg-info/top_level.txt
