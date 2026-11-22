@@ -4,6 +4,7 @@ import csv
 import hashlib
 import io
 import re
+import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -134,6 +135,10 @@ class RestaurantCatalog:
 
         csv.field_size_limit(max(csv.field_size_limit(), 10_000_000))
         reader = csv.DictReader(io.StringIO(csv_text))
+        return cls._from_csv_reader(reader)
+
+    @classmethod
+    def _from_csv_reader(cls, reader: csv.DictReader) -> "RestaurantCatalog":
         if reader.fieldnames is None:
             raise DatasetIngestionError("The dataset does not include a CSV header row.")
 
@@ -184,11 +189,6 @@ class RestaurantCatalog:
                     else None
                 ),
                 rating=rating_value,
-                source_fields={
-                    key: value
-                    for key, value in record.items()
-                    if key and value is not None and str(value).strip() not in {"", "-", "NEW", "N/A"}
-                },
             )
             restaurants.append(restaurant)
             diagnostics.valid_rows += 1
@@ -204,35 +204,83 @@ class RestaurantCatalog:
         )
 
     @classmethod
-    def from_csv_url(cls, url: str) -> "RestaurantCatalog":
+    def from_csv_url(
+        cls,
+        url: str,
+        max_bytes: int = 100 * 1024 * 1024,
+    ) -> "RestaurantCatalog":
         if not url or not str(url).strip():
             raise DatasetIngestionError("DATASET_URL is required to load the restaurant catalog.")
 
         normalized_url = str(url).strip()
-        if "://" in normalized_url:
-            request = Request(normalized_url, headers={"User-Agent": "Mozilla/5.0"})
-            try:
-                with urlopen(request, timeout=30) as response:
-                    payload = response.read()
-            except (HTTPError, URLError, TimeoutError, OSError) as exc:
-                raise DatasetIngestionError(
-                    f"Unable to fetch restaurant catalog from {normalized_url}: {exc}"
-                ) from exc
-        else:
-            csv_path = Path(normalized_url)
-            if not csv_path.exists():
-                raise DatasetIngestionError(f"Restaurant catalog file not found: {csv_path}")
-            payload = csv_path.read_bytes()
+        download_limit = max_bytes if max_bytes > 0 else 100 * 1024 * 1024
+        temporary_path: Path | None = None
 
         try:
-            text = payload.decode("utf-8-sig")
-        except UnicodeDecodeError:
-            try:
-                text = payload.decode("latin-1")
-            except UnicodeDecodeError as exc:
-                raise DatasetIngestionError("Dataset encoding is not readable as UTF-8 or Latin-1.") from exc
+            with tempfile.NamedTemporaryFile(mode="wb", suffix=".csv", delete=False) as temporary:
+                temporary_path = Path(temporary.name)
 
-        return cls.from_csv_text(text, source_url=normalized_url)
+                if "://" in normalized_url:
+                    request = Request(normalized_url, headers={"User-Agent": "Mozilla/5.0"})
+                    try:
+                        with urlopen(request, timeout=30) as response:
+                            content_length = response.headers.get("Content-Length")
+                            if content_length:
+                                try:
+                                    if int(content_length) > download_limit:
+                                        raise DatasetIngestionError(
+                                            f"Restaurant catalog exceeds the download limit of {download_limit} bytes."
+                                        )
+                                except ValueError:
+                                    pass
+
+                            downloaded = 0
+                            while True:
+                                chunk = response.read(1024 * 1024)
+                                if not chunk:
+                                    break
+                                downloaded += len(chunk)
+                                if downloaded > download_limit:
+                                    raise DatasetIngestionError(
+                                        f"Restaurant catalog exceeds the download limit of {download_limit} bytes."
+                                    )
+                                temporary.write(chunk)
+                    except (HTTPError, URLError, TimeoutError, OSError) as exc:
+                        raise DatasetIngestionError(
+                            f"Unable to fetch restaurant catalog from {normalized_url}: {exc}"
+                        ) from exc
+                else:
+                    csv_path = Path(normalized_url)
+                    if not csv_path.exists():
+                        raise DatasetIngestionError(f"Restaurant catalog file not found: {csv_path}")
+                    with csv_path.open("rb") as source:
+                        downloaded = 0
+                        while True:
+                            chunk = source.read(1024 * 1024)
+                            if not chunk:
+                                break
+                            downloaded += len(chunk)
+                            if downloaded > download_limit:
+                                raise DatasetIngestionError(
+                                    f"Restaurant catalog exceeds the download limit of {download_limit} bytes."
+                                )
+                            temporary.write(chunk)
+
+            if temporary_path.stat().st_size == 0:
+                raise DatasetIngestionError("The dataset source is empty.")
+
+            csv.field_size_limit(max(csv.field_size_limit(), 10_000_000))
+            try:
+                with temporary_path.open("r", encoding="utf-8-sig", newline="") as csv_file:
+                    reader = csv.DictReader(csv_file)
+                    return cls._from_csv_reader(reader)
+            except UnicodeDecodeError:
+                with temporary_path.open("r", encoding="latin-1", newline="") as csv_file:
+                    reader = csv.DictReader(csv_file)
+                    return cls._from_csv_reader(reader)
+        finally:
+            if temporary_path is not None:
+                temporary_path.unlink(missing_ok=True)
 
     def __len__(self) -> int:
         return len(self.restaurants)

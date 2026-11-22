@@ -19,7 +19,6 @@ class RestaurantCandidate(BaseModel):
     cost: float | None = None
     cost_display: str | None = None
     rating: float | None = None
-    source_fields: dict[str, str | int | float | None] = Field(default_factory=dict)
 
 
 class RequestPreferences(BaseModel):

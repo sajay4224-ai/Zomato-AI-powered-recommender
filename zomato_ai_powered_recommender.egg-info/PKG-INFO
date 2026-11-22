@@ -40,4 +40,8 @@ This phase defines the dataset contract, budget mapping, filtering rules, LLM pr
    `pytest`
 
 The app exposes a health endpoint at `/health` and a readiness endpoint at `/ready`.
-The `/api/recommend` route is part of the typed boundary contract and currently returns a clear service error until the dataset filtering and Gemini ranking pipeline is implemented in later phases.
+The `/api/recommend` route validates preferences, filters the catalog deterministically, ranks eligible candidates with the Gemini adapter when available, and transparently falls back to top deterministic matches if the model is unavailable or malformed.
+
+## Release readiness and deployment
+
+See [docs/release-readiness.md](./docs/release-readiness.md) for the deployment checklist, smoke test procedure, environment configuration, and production-readiness validation matrix.

@@ -70,7 +70,7 @@ The app reads the following environment variables at runtime:
 
 - `DATASET_URL` — HF CSV URL for the restaurant catalog
 - `GEMINI_API_KEY` — Gemini credential, never committed to the repo
-- `GEMINI_MODEL` — default Gemini model name, e.g. `gemini-2.5-flash`
+- `GEMINI_MODEL` — default Gemini model name, e.g. `gemini-3.5-flash-lite`
 - `REQUEST_TIMEOUT_SECONDS` — model timeout window
 - `DEFAULT_CANDIDATE_LIMIT` — candidate count sent to the LLM
 - `DEFAULT_RESULT_LIMIT` — number of recommendations to show to the user
@@ -82,7 +82,7 @@ A repo-local `.env.example` establishes the expected names without exposing secr
 
 ### Selected provider
 - Provider: Google Gemini via the official Google Generative AI SDK
-- Model: `gemini-2.5-flash` for the initial implementation
+- Model: `gemini-3.5-flash-lite` for the initial implementation
 - Rationale: strong multimodal/structured-output capabilities, low latency, and a straightforward Python integration for ranking and explanation tasks
 
 ### Provider-independent adapter contract

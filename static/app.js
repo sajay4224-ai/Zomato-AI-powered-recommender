@@ -1,3 +1,5 @@
+const API_BASE_URL = (window.API_BASE_URL || "").replace(/\/+$/, "");
+
 const form = document.getElementById("recommendation-form");
 const submitButton = document.getElementById("submit-button");
 const statusBox = document.getElementById("status-box");
@@ -14,7 +16,7 @@ function addOption(select, label, value = "") {
 
 async function loadOptions() {
   try {
-    const response = await fetch("/api/options");
+    const response = await fetch(`${API_BASE_URL}/api/options`);
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.detail || "Restaurant options could not be loaded.");
@@ -153,7 +155,7 @@ form.addEventListener("submit", async (event) => {
   };
 
   try {
-    const response = await fetch("/api/recommend", {
+    const response = await fetch(`${API_BASE_URL}/api/recommend`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

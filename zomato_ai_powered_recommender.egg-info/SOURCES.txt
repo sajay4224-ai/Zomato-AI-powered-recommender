@@ -6,6 +6,8 @@ app/main.py
 app/models.py
 app/services/__init__.py
 app/services/catalog.py
+app/services/filtering.py
+app/services/llm.py
 app/services/orchestration.py
 tests/test_app.py
 zomato_ai_powered_recommender.egg-info/PKG-INFO

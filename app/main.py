@@ -4,6 +4,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.models import RecommendationResponse, RequestPreferences
@@ -16,6 +17,18 @@ settings = get_settings()
 app = FastAPI(title=settings.app_name)
 service = RecommendationService(settings)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+frontend_origins = [
+    origin.strip().rstrip("/")
+    for origin in settings.frontend_origins.split(",")
+    if origin.strip()
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=frontend_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type"],
+)
 app.mount("/static", StaticFiles(directory=PROJECT_ROOT / "static"), name="static")
 
 

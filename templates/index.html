@@ -14,7 +14,8 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/static/styles.css?v=5" />
+    <link rel="stylesheet" href="/static/styles.css?v=6" />
+    <script src="/static/config.js"></script>
     <script src="/static/app.js?v=2" defer></script>
   </head>
   <body>
@@ -28,11 +29,33 @@
 
     <main class="page">
       <section class="intro">
-        <p class="eyebrow">A little inspiration for your next meal</p>
-        <h1>Good food,<br /><span>found for you.</span></h1>
-        <p class="intro-copy">
-          Tell us what you're craving. We'll find the spots that fit your mood, your taste, and your budget.
-        </p>
+        <div class="intro-content">
+          <p class="eyebrow">A little inspiration for your next meal</p>
+          <h1>Good food,<br /><span>found for you.</span></h1>
+          <p class="intro-copy">
+            Tell us what you're craving. We'll find the spots that fit your mood, your taste, and your budget.
+          </p>
+        </div>
+        <div class="food-collage" role="group" aria-label="A collage of delicious food">
+          <img
+            class="food-image food-image-main"
+            src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&amp;fit=crop&amp;w=500&amp;q=85"
+            alt="Colorful fresh salad bowl"
+            fetchpriority="high"
+          />
+          <img
+            class="food-image food-image-pizza"
+            src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&amp;fit=crop&amp;w=300&amp;q=80"
+            alt="Freshly baked pizza"
+            loading="lazy"
+          />
+          <img
+            class="food-image food-image-curry"
+            src="https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&amp;fit=crop&amp;w=300&amp;q=80"
+            alt="A bowl of curry with rice"
+            loading="lazy"
+          />
+        </div>
       </section>
 
       <div class="workspace">

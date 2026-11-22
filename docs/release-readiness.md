@@ -8,7 +8,7 @@ Required environment variables are defined in [.env.example](../.env.example). F
 
 - `DATASET_URL` — the dataset CSV location used for the active catalog
 - `GEMINI_API_KEY` — the provider credential, never committed to source control
-- `GEMINI_MODEL` — the model identifier, for example `gemini-2.5-flash`
+- `GEMINI_MODEL` — the model identifier, for example `gemini-3.5-flash-lite`
 - `REQUEST_TIMEOUT_SECONDS` — maximum wait time for provider calls
 - `DEFAULT_CANDIDATE_LIMIT` — number of candidates sent to the LLM
 - `DEFAULT_RESULT_LIMIT` — number of recommendations shown to the user

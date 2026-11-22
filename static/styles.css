@@ -100,9 +100,17 @@ textarea {
 }
 
 .intro {
-  max-width: 650px;
+  display: grid;
+  max-width: 820px;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  align-items: center;
+  gap: 34px;
   margin: 0 auto 38px;
-  text-align: center;
+  text-align: left;
+}
+
+.intro-content {
+  min-width: 0;
 }
 
 .eyebrow {
@@ -131,10 +139,51 @@ textarea {
 
 .intro-copy {
   max-width: 440px;
-  margin: 17px auto 0;
+  margin: 17px 0 0;
   color: var(--muted);
   font-size: 14px;
   line-height: 1.75;
+}
+
+.food-collage {
+  position: relative;
+  width: 280px;
+  height: 225px;
+}
+
+.food-image {
+  position: absolute;
+  display: block;
+  border: 5px solid rgba(255, 253, 250, 0.96);
+  object-fit: cover;
+  box-shadow: 0 14px 32px rgba(67, 45, 80, 0.2);
+}
+
+.food-image-main {
+  top: 16px;
+  right: 25px;
+  width: 174px;
+  height: 193px;
+  border-radius: 48% 48% 18px 18px;
+  transform: rotate(3deg);
+}
+
+.food-image-pizza {
+  top: 0;
+  right: 0;
+  width: 91px;
+  height: 91px;
+  border-radius: 50%;
+  transform: rotate(8deg);
+}
+
+.food-image-curry {
+  bottom: 0;
+  left: 0;
+  width: 105px;
+  height: 105px;
+  border-radius: 50%;
+  transform: rotate(-7deg);
 }
 
 .workspace {
@@ -153,7 +202,67 @@ textarea {
 }
 
 .search-panel {
+  border-color: rgba(215, 198, 239, 0.17);
+  background: linear-gradient(145deg, #211d28, #17151d);
+  color: #f7f2fc;
   padding: 25px 24px 20px;
+}
+
+.search-panel .panel-heading h2 {
+  color: #fbf8ff;
+}
+
+.search-panel .panel-heading p {
+  color: #b7adbf;
+}
+
+.search-panel .heading-icon {
+  background: linear-gradient(145deg, #382d48, #462b32);
+  color: #d7c3f4;
+}
+
+.search-panel .field-label {
+  color: #eee8f5;
+}
+
+.search-panel .field-hint,
+.search-panel .form-footnote {
+  color: #b3aaba;
+}
+
+.search-panel .optional {
+  color: #c1b6ca;
+}
+
+.search-panel .input-wrap input,
+.search-panel .input-wrap select,
+.search-panel textarea {
+  border-color: #494252;
+  background-color: #2a2631;
+  color: #f8f4fc;
+}
+
+.search-panel .input-wrap select {
+  border-color: #625272;
+  background-color: #302a3a;
+}
+
+.search-panel .input-wrap input::placeholder,
+.search-panel textarea::placeholder {
+  color: #aaa0b2;
+}
+
+.search-panel .input-wrap select:disabled {
+  border-color: #403b46;
+  background-color: #24212a;
+  color: #aaa0b2;
+}
+
+.search-panel .input-wrap input:focus,
+.search-panel .input-wrap select:focus,
+.search-panel textarea:focus {
+  border-color: #b292dc;
+  box-shadow: 0 0 0 3px rgba(178, 146, 220, 0.2);
 }
 
 .panel-heading {
@@ -639,12 +748,41 @@ textarea:focus {
   }
 
   .intro {
+    grid-template-columns: minmax(0, 1fr) 190px;
+    gap: 12px;
     margin-bottom: 27px;
+  }
+
+  .intro h1 {
+    font-size: clamp(35px, 6vw, 48px);
+    letter-spacing: -1.7px;
   }
 
   .intro-copy {
     max-width: 360px;
     font-size: 13px;
+  }
+
+  .food-collage {
+    width: 190px;
+    height: 170px;
+  }
+
+  .food-image-main {
+    top: 11px;
+    right: 16px;
+    width: 125px;
+    height: 147px;
+  }
+
+  .food-image-pizza {
+    width: 65px;
+    height: 65px;
+  }
+
+  .food-image-curry {
+    width: 72px;
+    height: 72px;
   }
 
   .workspace {
@@ -672,8 +810,19 @@ textarea:focus {
     height: 8px;
   }
 
-  .intro h1 {
-    letter-spacing: -1.7px;
+  .intro {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    text-align: center;
+  }
+
+  .intro-copy {
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .food-collage {
+    justify-self: center;
   }
 
   .footer {

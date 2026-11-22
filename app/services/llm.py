@@ -19,7 +19,7 @@ class LLMAdapter:
         self.settings = settings
         self.timeout_seconds = max(1, int(settings.request_timeout_seconds))
         self.api_key = settings.gemini_api_key.strip()
-        self.model_name = settings.gemini_model.strip() or "gemini-2.5-flash"
+        self.model_name = settings.gemini_model.strip() or "gemini-3.5-flash-lite"
 
     def rank_candidates(
         self,
@@ -34,7 +34,7 @@ class LLMAdapter:
         payload = self._build_payload(request, candidates)
         endpoint = (
             "https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{self.model_name}:generateContent?key={self.api_key}"
+            f"{self.model_name}:generateContent"
         )
         body = json.dumps(payload).encode("utf-8")
         http_request = Request(
@@ -42,6 +42,7 @@ class LLMAdapter:
             data=body,
             headers={
                 "Content-Type": "application/json",
+                "x-goog-api-key": self.api_key,
                 "User-Agent": "ZomatoAIRecommender/1.0",
             },
             method="POST",
@@ -50,8 +51,14 @@ class LLMAdapter:
         try:
             with urlopen(http_request, timeout=self.timeout_seconds) as response:
                 raw_text = response.read().decode("utf-8")
-        except (HTTPError, URLError, TimeoutError, OSError) as exc:
-            raise LLMAdapterError(f"Gemini request failed: {exc}") from exc
+        except HTTPError as exc:
+            raise LLMAdapterError(
+                f"Gemini returned HTTP {exc.code}; verify GEMINI_API_KEY and GEMINI_MODEL."
+            ) from None
+        except (URLError, TimeoutError, OSError) as exc:
+            raise LLMAdapterError(
+                f"Gemini request failed ({type(exc).__name__}); check connectivity and timeout."
+            ) from None
 
         try:
             response_data = json.loads(raw_text)

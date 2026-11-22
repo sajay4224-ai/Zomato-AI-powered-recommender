@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 def _reload_app():
     os.environ.setdefault("DATASET_URL", "https://example.com/zomato.csv")
     os.environ.setdefault("GEMINI_API_KEY", "test-gemini-key")
-    os.environ.setdefault("GEMINI_MODEL", "gemini-2.5-flash")
+    os.environ.setdefault("GEMINI_MODEL", "gemini-3.5-flash-lite")
     os.environ.setdefault("REQUEST_TIMEOUT_SECONDS", "30")
     os.environ.setdefault("DEFAULT_CANDIDATE_LIMIT", "20")
     os.environ.setdefault("DEFAULT_RESULT_LIMIT", "5")
@@ -55,10 +55,35 @@ def test_home_page_renders_search_form():
     assert stylesheet.status_code == 200
     assert "restaurant-card" in stylesheet.text
     assert script.status_code == 200
-    assert 'fetch("/api/options")' in script.text
-    assert 'fetch("/api/recommend"' in script.text
+    assert 'fetch(`${API_BASE_URL}/api/options`)' in script.text
+    assert 'fetch(`${API_BASE_URL}/api/recommend`' in script.text
     assert "familyPreference" in script.text
     assert "additional_preferences: additionalPreferences || null" in script.text
+    assert 'src="/static/config.js"' in response.text
+    assert response.text.index('src="/static/config.js"') < response.text.index('src="/static/app.js')
+
+
+def test_cors_allowlist_matches_exact_origins(monkeypatch):
+    monkeypatch.setenv("FRONTEND_ORIGINS", " https://app.example.com/ , http://localhost:3000 ")
+
+    import app.config
+    import app.main
+
+    app.config.get_settings.cache_clear()
+    importlib.reload(app.main)
+
+    client = TestClient(app.main.app)
+    allowed = client.get(
+        "/health",
+        headers={"Origin": "https://app.example.com"},
+    )
+    blocked = client.get(
+        "/health",
+        headers={"Origin": "https://other.example.com"},
+    )
+
+    assert allowed.headers["access-control-allow-origin"] == "https://app.example.com"
+    assert "access-control-allow-origin" not in blocked.headers
 
 
 def test_ready_endpoint_reports_catalog_status(monkeypatch, tmp_path):
@@ -70,7 +95,7 @@ Alpha,Indiranagar,Bangalore,"Italian, Pizza",4.8/5,600,1st Main Rd
     )
     monkeypatch.setenv("DATASET_URL", str(csv_path))
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
-    monkeypatch.setenv("GEMINI_MODEL", "gemini-2.5-flash")
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
     import app.config
     import app.main
@@ -163,7 +188,7 @@ Blue Bowl,Indiranagar,Bangalore,"Italian, Pizza",4.4/5,800,1st Main Rd
 def test_recommend_returns_service_error_when_catalog_fails(monkeypatch):
     monkeypatch.setenv("DATASET_URL", "/tmp/definitely-missing-zomato.csv")
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
-    monkeypatch.setenv("GEMINI_MODEL", "gemini-2.5-flash")
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
     import app.config
     import app.main
@@ -223,7 +248,7 @@ Alpha,Indiranagar,Bangalore,"Italian, Pizza",4.8/5,600,1st Main Rd
     )
     monkeypatch.setenv("DATASET_URL", str(csv_path))
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
-    monkeypatch.setenv("GEMINI_MODEL", "gemini-2.5-flash")
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
     import app.config
     import app.main
@@ -297,12 +322,53 @@ Beta,Indiranagar,Bangalore,"Italian",4.5/5,900,2nd Main Rd
     monkeypatch = __import__("pytest").MonkeyPatch()
     monkeypatch.setattr(llm_module, "urlopen", lambda *args, **kwargs: FakeResponse())
     try:
-        adapter = LLMAdapter(type("Settings", (), {"request_timeout_seconds": 30, "gemini_api_key": "fake-key", "gemini_model": "gemini-2.5-flash"})())
+        adapter = LLMAdapter(type("Settings", (), {"request_timeout_seconds": 30, "gemini_api_key": "fake-key", "gemini_model": "gemini-3.5-flash-lite"})())
         ranking = adapter.rank_candidates(request, catalog.restaurants[:2])
         assert ranking.recommendations[0].restaurant_id == catalog.restaurants[1].id
         assert ranking.summary == "Top match."
     finally:
         monkeypatch.undo()
+
+
+def test_llm_adapter_does_not_expose_api_key_on_http_error(monkeypatch):
+    from urllib.error import HTTPError
+
+    import pytest
+
+    from app.models import RequestPreferences
+    from app.services.catalog import RestaurantCatalog
+    from app.services.llm import LLMAdapter, LLMAdapterError
+
+    catalog = RestaurantCatalog.from_csv_text(
+        """name,location,listed_in(city),cuisines,rate,approx_cost(for two people),address
+Alpha,Indiranagar,Bangalore,Italian,4.8/5,600,1st Main Rd
+"""
+    )
+    request = RequestPreferences(location="Bangalore", budget="medium")
+    api_key = "private-test-key"
+    adapter = LLMAdapter(
+        type(
+            "Settings",
+            (),
+            {
+                "request_timeout_seconds": 30,
+                "gemini_api_key": api_key,
+                "gemini_model": "gemini-3.5-flash-lite",
+            },
+        )()
+    )
+    def reject_request(http_request, timeout):
+        assert api_key not in http_request.full_url
+        assert http_request.get_header("X-goog-api-key") == api_key
+        raise HTTPError(http_request.full_url, 403, "Forbidden", {}, None)
+
+    monkeypatch.setattr("app.services.llm.urlopen", reject_request)
+
+    with pytest.raises(LLMAdapterError) as error:
+        adapter.rank_candidates(request, catalog.restaurants)
+
+    assert "HTTP 403" in str(error.value)
+    assert api_key not in str(error.value)
 
 
 def test_recommend_uses_deterministic_fallback_when_llm_fails(monkeypatch):
@@ -324,7 +390,7 @@ Beta,Indiranagar,Bangalore,"Italian",4.5/5,900,2nd Main Rd
 
     from app.services.orchestration import RecommendationService
 
-    service = RecommendationService(type("Settings", (), {"default_candidate_limit": 5, "default_result_limit": 5, "dataset_url": "https://example.com/zomato.csv", "gemini_api_key": "fake-key", "gemini_model": "gemini-2.5-flash", "request_timeout_seconds": 30})())
+    service = RecommendationService(type("Settings", (), {"default_candidate_limit": 5, "default_result_limit": 5, "dataset_url": "https://example.com/zomato.csv", "gemini_api_key": "fake-key", "gemini_model": "gemini-3.5-flash-lite", "request_timeout_seconds": 30})())
     service.catalog = catalog
     service.catalog_error = None
     service.llm_adapter.rank_candidates = lambda *args, **kwargs: (_ for _ in ()).throw(LLMAdapterError("provider unavailable"))
@@ -346,7 +412,7 @@ Only,Indiranagar,Bangalore,"Italian",3.9/5,1400,1st Main Rd
     )
     monkeypatch.setenv("DATASET_URL", str(csv_path))
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
-    monkeypatch.setenv("GEMINI_MODEL", "gemini-2.5-flash")
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
     import app.config
     import app.main

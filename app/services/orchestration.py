@@ -25,7 +25,10 @@ class RecommendationService:
     def refresh_catalog(self) -> RestaurantCatalog:
         logger.info("Refreshing dataset catalog from %s", self.settings.dataset_url)
         try:
-            catalog = RestaurantCatalog.from_csv_url(self.settings.dataset_url)
+            catalog = RestaurantCatalog.from_csv_url(
+                self.settings.dataset_url,
+                getattr(self.settings, "dataset_max_bytes", 100 * 1024 * 1024),
+            )
         except DatasetIngestionError as exc:
             self.catalog = RestaurantCatalog.empty()
             self.catalog_error = str(exc)
