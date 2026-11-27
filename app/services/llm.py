@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from app.config import Settings
@@ -36,15 +37,19 @@ class LLMAdapter:
             "https://generativelanguage.googleapis.com/v1beta/models/"
             f"{self.model_name}:generateContent"
         )
+        headers = {
+            "Content-Type": "application/json",
+            "User-Agent": "ZomatoAIRecommender/1.0",
+        }
+        if self.api_key.startswith("AQ."):
+            endpoint = f"{endpoint}?{urlencode({'key': self.api_key})}"
+        else:
+            headers["x-goog-api-key"] = self.api_key
         body = json.dumps(payload).encode("utf-8")
         http_request = Request(
             endpoint,
             data=body,
-            headers={
-                "Content-Type": "application/json",
-                "x-goog-api-key": self.api_key,
-                "User-Agent": "ZomatoAIRecommender/1.0",
-            },
+            headers=headers,
             method="POST",
         )
 
@@ -52,8 +57,18 @@ class LLMAdapter:
             with urlopen(http_request, timeout=self.timeout_seconds) as response:
                 raw_text = response.read().decode("utf-8")
         except HTTPError as exc:
+            try:
+                error_data = json.loads(exc.read().decode("utf-8", errors="replace"))
+                provider_message = error_data.get("error", {}).get("message", "")
+            except (AttributeError, json.JSONDecodeError):
+                provider_message = ""
+            if isinstance(provider_message, str):
+                provider_message = provider_message.replace(self.api_key, "[REDACTED]")
+            else:
+                provider_message = ""
+            detail = f": {provider_message}" if provider_message else ""
             raise LLMAdapterError(
-                f"Gemini returned HTTP {exc.code}; verify GEMINI_API_KEY and GEMINI_MODEL."
+                f"Gemini returned HTTP {exc.code}{detail}; verify GEMINI_API_KEY and GEMINI_MODEL."
             ) from None
         except (URLError, TimeoutError, OSError) as exc:
             raise LLMAdapterError(
@@ -79,6 +94,7 @@ class LLMAdapter:
         request: RequestPreferences,
         candidates: list[RestaurantCandidate],
     ) -> dict[str, object]:
+        result_limit = max(1, int(getattr(self.settings, "default_result_limit", 5)))
         candidate_context = []
         for candidate in candidates:
             candidate_context.append(
@@ -98,6 +114,8 @@ class LLMAdapter:
             "You are ranking eligible restaurants for a user.",
             " Rank only candidate IDs supplied in the JSON payload.",
             " Use the user's preferences to prioritize options.",
+            f" Return no more than {result_limit} recommendations, ordered from best match to next best.",
+            " Keep each explanation to one concise sentence.",
             " Explain each recommendation using only the restaurant facts supplied in the payload.",
             " Do not invent attributes like parking, family-friendly status, or opening hours.",
             " Treat extra free-form preferences as soft wishes rather than confirmed facts.",

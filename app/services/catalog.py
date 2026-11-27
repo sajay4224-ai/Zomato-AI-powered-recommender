@@ -42,10 +42,26 @@ class CatalogDiagnostics:
     missing_rating_rows: int = 0
 
 
+def _repair_mojibake(value: str) -> str:
+    def repair_run(match: re.Match[str]) -> str:
+        run = match.group()
+        try:
+            return run.encode("latin-1").decode("utf-8")
+        except UnicodeDecodeError:
+            return run
+
+    repaired = value
+    while True:
+        updated = re.sub(r"[\x80-\xff]{2,}", repair_run, repaired)
+        if updated == repaired:
+            return repaired
+        repaired = updated
+
+
 def _normalize_text(value: object) -> str | None:
     if value is None:
         return None
-    cleaned = " ".join(str(value).strip().split())
+    cleaned = _repair_mojibake(" ".join(str(value).strip().split()))
     if not cleaned:
         return None
     lowered = cleaned.lower()
