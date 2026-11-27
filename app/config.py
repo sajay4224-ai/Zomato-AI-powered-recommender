@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     dataset_url: str = Field(..., validation_alias="DATASET_URL")
     gemini_api_key: str = Field(..., validation_alias="GEMINI_API_KEY")
     gemini_model: str = Field("gemini-3.5-flash-lite", validation_alias="GEMINI_MODEL")
-    request_timeout_seconds: int = Field(30, validation_alias="REQUEST_TIMEOUT_SECONDS")
+    request_timeout_seconds: int = Field(90, validation_alias="REQUEST_TIMEOUT_SECONDS")
     default_candidate_limit: int = Field(20, validation_alias="DEFAULT_CANDIDATE_LIMIT")
     default_result_limit: int = Field(5, validation_alias="DEFAULT_RESULT_LIMIT")
     server_host: str = Field("0.0.0.0", validation_alias="SERVER_HOST")

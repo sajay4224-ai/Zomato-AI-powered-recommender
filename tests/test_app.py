@@ -185,6 +185,22 @@ Blue Bowl,Indiranagar,Bangalore,"Italian, Pizza",4.4/5,800,1st Main Rd
     assert restaurant.id.startswith("restaurant-")
 
 
+def test_catalog_loader_repairs_repeated_utf8_mojibake():
+    from app.services.catalog import RestaurantCatalog
+
+    expected_name = "Santé Spa Cuisine"
+    source_name = expected_name
+    for _ in range(6):
+        source_name = source_name.encode("utf-8").decode("latin-1")
+
+    catalog = RestaurantCatalog.from_csv_text(
+        "name,location,listed_in(city),cuisines,rate,approx_cost(for two people),address\n"
+        f"{source_name},Indiranagar,Bangalore,Healthy Food,4.9/5,1000,1st Main Rd\n"
+    )
+
+    assert catalog.restaurants[0].name == expected_name
+
+
 def test_recommend_returns_service_error_when_catalog_fails(monkeypatch):
     monkeypatch.setenv("DATASET_URL", "/tmp/definitely-missing-zomato.csv")
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
@@ -345,7 +361,7 @@ Alpha,Indiranagar,Bangalore,Italian,4.8/5,600,1st Main Rd
 """
     )
     request = RequestPreferences(location="Bangalore", budget="medium")
-    api_key = "private-test-key"
+    api_key = "AIzaSy-private-test-key"
     adapter = LLMAdapter(
         type(
             "Settings",
@@ -368,6 +384,54 @@ Alpha,Indiranagar,Bangalore,Italian,4.8/5,600,1st Main Rd
         adapter.rank_candidates(request, catalog.restaurants)
 
     assert "HTTP 403" in str(error.value)
+    assert api_key not in str(error.value)
+
+
+def test_llm_adapter_routes_aq_keys_via_query_parameter(monkeypatch):
+    import io
+    from urllib.error import HTTPError
+    from urllib.parse import parse_qs, urlparse
+
+    import pytest
+
+    from app.models import RequestPreferences
+    from app.services.catalog import RestaurantCatalog
+    from app.services.llm import LLMAdapter, LLMAdapterError
+
+    catalog = RestaurantCatalog.from_csv_text(
+        """name,location,listed_in(city),cuisines,rate,approx_cost(for two people),address
+Alpha,Indiranagar,Bangalore,Italian,4.8/5,600,1st Main Rd
+"""
+    )
+    request = RequestPreferences(location="Bangalore", budget="medium")
+    api_key = "AQ.test-key"
+    adapter = LLMAdapter(
+        type(
+            "Settings",
+            (),
+            {
+                "request_timeout_seconds": 30,
+                "gemini_api_key": api_key,
+                "gemini_model": "gemini-3.5-flash-lite",
+            },
+        )()
+    )
+
+    def reject_request(http_request, timeout):
+        assert http_request.full_url.startswith(
+            "https://generativelanguage.googleapis.com/v1beta/models/"
+        )
+        assert parse_qs(urlparse(http_request.full_url).query) == {"key": [api_key]}
+        assert http_request.get_header("X-goog-api-key") is None
+        body = json.dumps({"error": {"message": "API access is disabled."}}).encode("utf-8")
+        raise HTTPError(http_request.full_url, 403, "Forbidden", {}, io.BytesIO(body))
+
+    monkeypatch.setattr("app.services.llm.urlopen", reject_request)
+
+    with pytest.raises(LLMAdapterError) as error:
+        adapter.rank_candidates(request, catalog.restaurants)
+
+    assert "API access is disabled" in str(error.value)
     assert api_key not in str(error.value)
 
 
