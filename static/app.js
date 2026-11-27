@@ -53,8 +53,9 @@ async function loadOptions() {
 }
 
 function showStatus(type, message) {
+  const emoji = type === "success" ? "✅ " : type === "error" ? "⚠️ " : "🍽️ ";
   statusBox.className = `status-box ${type}`;
-  statusBox.textContent = message;
+  statusBox.textContent = `${emoji}${message}`;
   statusBox.hidden = false;
 }
 
@@ -67,6 +68,15 @@ function clearStatus() {
 function renderEmptyState(title, message) {
   const state = document.createElement("div");
   state.className = "empty-state";
+
+  if (title === "Finding your next favorite...") {
+    state.className = "empty-state loading-state";
+    const loader = document.createElement("div");
+    loader.className = "food-loader";
+    loader.setAttribute("aria-hidden", "true");
+    loader.innerHTML = '<span class="loader-ring"></span><span class="loader-emoji">🍜</span><span class="loader-badge">✨</span>';
+    state.append(loader);
+  }
 
   const heading = document.createElement("h3");
   heading.textContent = title;
@@ -83,16 +93,55 @@ function appendDetail(container, label, value) {
   container.append(chip);
 }
 
+function restaurantImageFor(restaurant, index) {
+  const cuisine = Array.isArray(restaurant.cuisines) ? restaurant.cuisines.join(" ").toLowerCase() : "";
+  const images = [
+    {
+      match: /indian|curry|tandoori/,
+      url: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=900&q=82",
+    },
+    {
+      match: /pizza|italian/,
+      url: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=900&q=82",
+    },
+    {
+      match: /japanese|sushi/,
+      url: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=900&q=82",
+    },
+  ];
+  const matchedImage = images.find(({ match }) => match.test(cuisine));
+  const defaultImages = [
+    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=900&q=82",
+    images[0].url,
+    images[1].url,
+  ];
+  return matchedImage?.url || defaultImages[index % defaultImages.length];
+}
+
 function createRestaurantCard(restaurant, index, aiRanked) {
   const card = document.createElement("article");
   card.className = "restaurant-card";
+
+  const imageFrame = document.createElement("div");
+  imageFrame.className = "card-image-frame";
+  const image = document.createElement("img");
+  image.className = "card-image";
+  image.src = restaurantImageFor(restaurant, index);
+  image.alt = `Cuisine inspiration for ${(restaurant.cuisines || []).join(", ") || "this restaurant"}`;
+  image.loading = "lazy";
+  image.decoding = "async";
+  image.addEventListener("error", () => imageFrame.remove(), { once: true });
+  const imageCaption = document.createElement("span");
+  imageCaption.className = "card-image-caption";
+  imageCaption.textContent = "Cuisine inspiration";
+  imageFrame.append(image, imageCaption);
 
   const top = document.createElement("div");
   top.className = "card-top";
   const titleGroup = document.createElement("div");
   const rank = document.createElement("span");
   rank.className = "card-rank";
-  rank.textContent = `${aiRanked ? "✦ AI PICK" : "✦ TOP MATCH"} · #${restaurant.rank || index + 1}`;
+  rank.textContent = `${aiRanked ? "✨ AI PICK" : "🍽️ TOP MATCH"} · #${restaurant.rank || index + 1}`;
   const title = document.createElement("h3");
   title.className = "card-title";
   title.textContent = restaurant.name || "Restaurant";
@@ -120,7 +169,7 @@ function createRestaurantCard(restaurant, index, aiRanked) {
   const explanation = document.createElement("p");
   explanation.className = "card-explanation";
   explanation.textContent = restaurant.explanation || "No explanation was provided.";
-  card.append(top, details, explanation);
+  card.append(imageFrame, top, details, explanation);
   return card;
 }
 

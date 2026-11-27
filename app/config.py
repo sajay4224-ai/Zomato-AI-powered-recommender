@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     server_host: str = Field("0.0.0.0", validation_alias="SERVER_HOST")
     server_port: int = Field(8000, validation_alias="SERVER_PORT")
     frontend_origins: str = Field("", validation_alias="FRONTEND_ORIGINS")
-    dataset_max_bytes: int = Field(100 * 1024 * 1024, validation_alias="DATASET_MAX_BYTES")
+    dataset_max_bytes: int = Field(650 * 1024 * 1024, validation_alias="DATASET_MAX_BYTES")
     environment: Literal["development", "production", "test"] = "development"
 
     @field_validator("dataset_url", "gemini_api_key")
